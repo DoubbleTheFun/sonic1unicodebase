@@ -1612,7 +1612,16 @@ DoFadeIn:
 .fadedone:
 		bclr	#2,v_music_dac_track+TrackPlaybackControl(a6)	; Clear 'SFX overriding' bit
 		clr.b	f_fadein_flag(a6)				; Stop fadein
-		rts	
+
+		tst.b	v_music_dac_track+TrackPlaybackControl(a6)					; is the DAC channel running?
+		bpl.s	.Resume_NoDAC				; if not, branch
+
+		moveq	#$FFFFFFB6,d0				; prepare FM channel 3/6 L/R/AMS/FMS address
+		move.b	v_music_dac_track+TrackAMSFMSPan(a6),d1				; load DAC channel's L/R/AMS/FMS value
+		jmp	WriteFMII(pc)				; write to FM 6
+
+.Resume_NoDAC:
+		rts
 ; End of function DoFadeIn
 
 ; ===========================================================================
