@@ -1231,7 +1231,6 @@ RunPLC:
 
 loc_160E:
 		andi.w	#$7FFF,d2
-		move.w	d2,(v_plc_patternsleft).w
 		bsr.w	NemDec_BuildCodeTable
 		move.b	(a0)+,d5
 		asl.w	#8,d5
@@ -1245,6 +1244,7 @@ loc_160E:
 		move.l	d0,(v_plc_previousrow).w
 		move.l	d5,(v_plc_dataword).w
 		move.l	d6,(v_plc_shiftvalue).w
+		move.w	d2,(v_plc_patternsleft).w
 
 Rplc_Exit:
 		rts	
@@ -2199,6 +2199,15 @@ Tit_LoadText:
 	if FixBugs
 		clearRAM v_sonicteam,v_sonicteam+object_size
 	else
+		lea	(v_objspace+$80).w,a1
+		moveq	#0,d0
+		move.w	#$F,d1	; ($40 / 4) - 1
+
+Tit_ClrObj2:
+		move.l	d0,(a1)+
+		dbf	d1,Tit_ClrObj2
+
+		move.b	#id_TitleSonic,(v_objspace+$40).w ; load big Sonic object
 		; Bug: this only clears half of the "SONIC TEAM PRESENTS" slot.
 		; This is responsible for why the "PRESS START BUTTON" text doesn't
 		; show up, as the routine ID isn't reset.
@@ -2333,7 +2342,7 @@ Tit_ClrScroll2:
 ; ---------------------------------------------------------------------------
 
 LevelSelect:
-		move.b	#4,(v_vbla_routine).w
+		move.b	#2,(v_vbla_routine).w
 		bsr.w	WaitForVBla
 		bsr.w	LevSelControls
 		bsr.w	RunPLC
@@ -6883,6 +6892,7 @@ Sonic_Index:	dc.w Sonic_Main-Sonic_Index
 		dc.w Sonic_Hurt-Sonic_Index
 		dc.w Sonic_Death-Sonic_Index
 		dc.w Sonic_ResetLevel-Sonic_Index
+        dc.w Sonic_Drowned-Sonic_Index
 ; ===========================================================================
 
 Sonic_Main:	; Routine 0
@@ -7059,10 +7069,10 @@ locret_13302:
 		include	"_incObj/Sonic ResetOnFloor.asm"
 		include	"_incObj/Sonic (part 2).asm"
 		include	"_incObj/Sonic Loops.asm"
+        include	"_incObj/Sonic Drowns.asm"
 		include	"_incObj/Sonic Animate.asm"
 		include	"_anim/Sonic.asm"
 		include	"_incObj/Sonic LoadGfx.asm"
-
 		include	"_incObj/0A Drowning Countdown.asm"
 
 
