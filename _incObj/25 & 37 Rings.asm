@@ -196,14 +196,14 @@ RLoss_Count:	; Routine 0
 		bne.w	.resetcounter
 
 .makerings:
-		_move.b	#id_RingLoss,obID(a1) ; load bouncing ring object
+		move.b	#id_RingLoss,0(a1) ; load bouncing ring object
 		addq.b	#2,obRoutine(a1)
 		move.b	#8,obHeight(a1)
 		move.b	#8,obWidth(a1)
 		move.w	obX(a0),obX(a1)
 		move.w	obY(a0),obY(a1)
 		move.l	#Map_Ring,obMap(a1)
-		move.w	#make_art_tile(ArtTile_Ring,1,0),obGfx(a1)
+		move.w	#$27B2,obGfx(a1)
 		move.b	#4,obRender(a1)
 		move.b	#3,obPriority(a1)
 		move.b	#$47,obColType(a1)
@@ -215,6 +215,14 @@ RLoss_Count:	; Routine 0
 		bsr.w	CalcSine
 		move.w	d4,d2
 		lsr.w	#8,d2
+		tst.b	($FFFFF64C).w		; Does the level have water?
+		beq.s	.skiphalvingvel		; If not, branch and skip underwater checks
+		move.w	($FFFFF646).w,d6	; Move water level to d6
+		cmp.w	obY(a0),d6		; Is the ring object underneath the water level?
+		bgt.s	.skiphalvingvel	
+		asr.w	d0
+		asr.w	d1
+.skiphalvingvel:
 		asl.w	d2,d0
 		asl.w	d2,d1
 		move.w	d0,d2
@@ -237,12 +245,23 @@ RLoss_Count:	; Routine 0
 		move.b	#$80,(f_ringcount).w ; update ring counter
 		move.b	#0,(v_lifecount).w
 		move.w	#sfx_RingLoss,d0
+        moveq   #-1,d0                  ; Move #-1 to d0
+        move.b  d0,obDelayAni(a0)       ; Move d0 to new timer
+        move.b  d0,(v_ani3_time).w      ; Move d0 to old timer (for animated purposes)
 		jsr	(PlaySound_Special).l	; play ring loss sound
 
 RLoss_Bounce:	; Routine 2
 		move.b	(v_ani3_frame).w,obFrame(a0)
 		bsr.w	SpeedToPos
 		addi.w	#$18,obVelY(a0)
+		tst.b	($FFFFF64C).w		; Does the level have water?
+		beq.s	.skipbounceslow		; If not, branch and skip underwater checks
+		move.w	($FFFFF646).w,d6	; Move water level to d6
+		cmp.w	obY(a0),d6		; Is the ring object underneath the water level?
+		bgt.s	.skipbounceslow	
+		subi.w	#$E,obVelY(a0)
+
+.skipbounceslow:
 		bmi.s	.chkdel
 		move.b	(v_vbla_byte).w,d0
 		add.b	d7,d0
@@ -257,13 +276,15 @@ RLoss_Bounce:	; Routine 2
 		sub.w	d0,obVelY(a0)
 		neg.w	obVelY(a0)
 
-.chkdel:
-		tst.b	(v_ani3_time).w
-		beq.s	RLoss_Delete
+	.chkdel:
+        subq.b  #1,obDelayAni(a0)       ; Subtract 1
+        beq.w   DeleteObject            ; If 0, delete
+		cmpi.w	#$FF00,($FFFFF72C).w		; is vertical wrapping enabled?
+		beq.w	DisplaySprite			; if so, branch
 		move.w	(v_limitbtm2).w,d0
 		addi.w	#$E0,d0
 		cmp.w	obY(a0),d0	; has object moved below level boundary?
-		blo.s	RLoss_Delete	; if yes, branch
+		bcs.s	RLoss_Delete	; if yes, branch
 		bra.w	DisplaySprite
 ; ===========================================================================
 
