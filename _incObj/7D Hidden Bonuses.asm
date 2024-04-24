@@ -63,7 +63,7 @@ Bonus_Main:	; Routine 0
 	if FixBugs
 		dc.w 10
 	else
-		dc.w 1 ; This is the wrong number of points.
+		dc.w 10 ; This is the wrong number of points.
 	endif
 ; ===========================================================================
 
