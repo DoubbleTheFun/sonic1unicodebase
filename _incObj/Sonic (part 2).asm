@@ -15,6 +15,7 @@ loc_1380C:
 		bsr.w	Sonic_RecordPosition
 		bsr.w	Sonic_Animate
 		bsr.w	Sonic_LoadGfx
+        bsr.w	Sonic_Water
 		jmp	(DisplaySprite).l
 
 ; ---------------------------------------------------------------------------
